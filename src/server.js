@@ -1,40 +1,16 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const axios = require('axios');
+const captchaRouter = require('./captcha');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
+app.use(captchaRouter); // import router captcha
 
 const rooms = new Map();
 const clients = new Map();
-
-const secretKey = '0x4AAAAAABk6Nhato5D8hXxxZfu9GgRep7E';
-
-async function verifyCaptcha(req, res, next) {
-  const token = req.body['cf-turnstile-response'];
-  if (!token) {
-    return res.status(400).json({ error: 'Missing captcha token' });
-  }
-  try {
-    const response = await axios.post(
-      'https://challenges.cloudflare.com/turnstile/v0/siteverify',
-      new URLSearchParams({
-        secret: secretKey,
-        response: token
-      })
-    );
-    if (response.data.success) {
-      next();
-    } else {
-      res.status(403).json({ error: 'Invalid captcha token' });
-    }
-  } catch {
-    res.status(500).json({ error: 'Error verifying captcha' });
-  }
-}
 
 function generateRoomKey() {
   let key;
@@ -50,14 +26,14 @@ function generateUsername() {
   return `${adjectives[Math.floor(Math.random() * adjectives.length)]}-${animals[Math.floor(Math.random() * animals.length)]}`;
 }
 
-app.post('/api/createRoom', verifyCaptcha, (req, res) => {
+app.post('/api/createRoom', (req, res) => {
   const roomKey = generateRoomKey();
   const username = generateUsername();
   rooms.set(roomKey, { users: [username], messages: [] });
   res.json({ roomKey, username });
 });
 
-app.post('/api/joinRoom', verifyCaptcha, (req, res) => {
+app.post('/api/joinRoom', (req, res) => {
   const { roomKey } = req.body;
   if (!rooms.has(roomKey)) {
     return res.status(404).json({ error: 'Room not found' });
@@ -67,7 +43,7 @@ app.post('/api/joinRoom', verifyCaptcha, (req, res) => {
   res.json({ username });
 });
 
-app.post('/api/sendMessage', verifyCaptcha, (req, res) => {
+app.post('/api/sendMessage', (req, res) => {
   const { roomKey, username, message } = req.body;
   if (!rooms.has(roomKey)) {
     return res.status(404).json({ error: 'Room not found' });

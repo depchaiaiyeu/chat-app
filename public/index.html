@@ -9,7 +9,51 @@
   <script src="https://hammerjs.github.io/dist/hammer.min.js"></script>
 </head>
 <body>
-  <div id="chat-room-page" class="page active">
+  <!-- Greeting Page -->
+  <div id="greeting-page" class="page active">
+    <div class="auth-container">
+      <div class="auth-logo">
+        <i class="fas fa-comments"></i>
+      </div>
+      <h1>Anonymous Chat</h1>
+      <p>Chat securely and privately</p>
+      <div class="auth-buttons">
+        <button id="create-room-btn">
+          <i class="fas fa-plus"></i>
+          Create Room
+        </button>
+        <button id="join-room-btn">
+          <i class="fas fa-sign-in-alt"></i>
+          Join Room
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Join Room Page -->
+  <div id="join-room-page" class="page">
+    <div class="auth-container">
+      <div class="page-header">
+        <button class="back-btn" id="join-back-btn">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+        <h2>Join Room</h2>
+      </div>
+      <div class="input-wrapper">
+        <div class="input-field">
+          <i class="fas fa-key"></i>
+          <input type="text" id="room-key-input" placeholder="Enter 6-digit room code" maxlength="6" pattern="[0-9]{6}">
+        </div>
+        <span class="error-message" id="join-error-message"></span>
+      </div>
+      <button id="join-submit-btn" class="submit-btn">
+        Join Room
+      </button>
+    </div>
+  </div>
+
+  <!-- Chat Room Page -->
+  <div id="chat-room-page" class="page">
     <div class="chat-container">
       <div class="chat-header">
         <div class="header-content">
@@ -66,6 +110,7 @@
       </div>
     </div>
   </div>
+
   <script src="app.js"></script>
 </body>
 </html>

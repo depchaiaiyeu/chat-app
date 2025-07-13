@@ -11,44 +11,29 @@
 <body>
   <!-- Greeting Page -->
   <div id="greeting-page" class="page active">
-    <div class="auth-container">
-      <div class="auth-logo">
-        <i class="fas fa-comments"></i>
-      </div>
+    <div class="container">
       <h1>Anonymous Chat</h1>
-      <p>Chat securely and privately</p>
-      <div class="auth-buttons">
-        <button id="create-room-btn">
-          <i class="fas fa-plus"></i>
-          Create Room
-        </button>
-        <button id="join-room-btn">
-          <i class="fas fa-sign-in-alt"></i>
-          Join Room
-        </button>
+      <p>Create or join a room to start chatting anonymously</p>
+      <div class="button-group">
+        <button id="create-room-btn" class="btn primary">Create Room</button>
+        <button id="join-room-btn" class="btn secondary">Join Room</button>
       </div>
     </div>
   </div>
 
   <!-- Join Room Page -->
   <div id="join-room-page" class="page">
-    <div class="auth-container">
-      <div class="page-header">
-        <button class="back-btn" id="join-back-btn">
-          <i class="fas fa-arrow-left"></i>
-        </button>
-        <h2>Join Room</h2>
+    <div class="container">
+      <h1>Join Room</h1>
+      <p>Enter the 6-digit room key to join</p>
+      <div class="input-group">
+        <input type="text" id="room-key-input" placeholder="Room Key" maxlength="6" pattern="[0-9]{6}">
+        <div class="error-message" id="join-error-message"></div>
       </div>
-      <div class="input-wrapper">
-        <div class="input-field">
-          <i class="fas fa-key"></i>
-          <input type="text" id="room-key-input" placeholder="Enter 6-digit room code" maxlength="6" pattern="[0-9]{6}">
-        </div>
-        <span class="error-message" id="join-error-message"></span>
+      <div class="button-group">
+        <button id="join-submit-btn" class="btn primary">Join</button>
+        <button id="join-back-btn" class="btn secondary">Back</button>
       </div>
-      <button id="join-submit-btn" class="submit-btn">
-        Join Room
-      </button>
     </div>
   </div>
 
@@ -56,21 +41,22 @@
   <div id="chat-room-page" class="page">
     <div class="chat-container">
       <div class="chat-header">
-        <div class="header-content">
-          <div class="room-info">
-            <div class="room-title">
-              <i class="fas fa-comments"></i>
-              <span id="room-key-display"></span>
-            </div>
-            <div class="user-info">
-              <i class="fas fa-user"></i>
-              <span id="username-display"></span>
-              <span class="online-count">
-                <i class="fas fa-circle"></i>
-                <span id="user-count-display">1</span> online
-              </span>
+        <div class="room-info">
+          <div class="room-title">
+            <i class="fas fa-comments"></i>
+            <h2>Room: <span id="room-key-display"></span></h2>
+          </div>
+          <div class="user-info">
+            <i class="fas fa-user"></i>
+            <p>You are: <span id="username-display"></span></p>
+            <div class="online-count">
+              <i class="fas fa-circle"></i>
+              <p>Users in room: <span id="user-count-display">1</span></p>
             </div>
           </div>
+        </div>
+        <div class="admin-controls" id="admin-controls">
+          <button id="close-room-btn" class="btn danger">Close Room</button>
         </div>
       </div>
 
@@ -83,7 +69,7 @@
           <p>Start chatting anonymously with other participants</p>
           <div class="room-key-info">
             Room Key: <span id="room-key-info"></span>
-            <button id="copy-room-key" class="copy-btn">
+            <button id="copy-room-key" class="btn-icon">
               <i class="fas fa-copy"></i>
             </button>
           </div>

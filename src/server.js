@@ -31,7 +31,7 @@ async function verifyCaptcha(req, res, next) {
     } else {
       res.status(403).json({ error: 'Invalid captcha token' });
     }
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: 'Error verifying captcha' });
   }
 }
@@ -107,13 +107,8 @@ app.get('/api/stream/:roomKey', (req, res) => {
   });
 });
 
-app.get('/', (req, res) => {
+app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-if (process.env.VERCEL) {
-  module.exports = app;
-} else {
-  const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
-}
+module.exports = app;

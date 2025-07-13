@@ -1,13 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const captchaRouter = require('./captcha');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
-app.use(captchaRouter); // import router captcha
 
 const rooms = new Map();
 const clients = new Map();
@@ -48,7 +46,11 @@ app.post('/api/sendMessage', (req, res) => {
   if (!rooms.has(roomKey)) {
     return res.status(404).json({ error: 'Room not found' });
   }
-  const msg = { username, message, timestamp: Date.now() };
+  const msg = {
+    username,
+    message,
+    timestamp: Date.now()
+  };
   rooms.get(roomKey).messages.push(msg);
   if (clients.has(roomKey)) {
     clients.get(roomKey).forEach(clientRes => {
@@ -83,8 +85,13 @@ app.get('/api/stream/:roomKey', (req, res) => {
   });
 });
 
-app.get('*', (req, res) => {
+app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-module.exports = app;
+if (process.env.VERCEL) {
+  module.exports = app;
+} else {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+}

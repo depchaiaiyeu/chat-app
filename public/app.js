@@ -1,10 +1,3 @@
-// App state
-let currentRoom = null;
-let currentUsername = null;
-let isAdmin = false;
-let replyingTo = null;
-let messageMap = new Map(); // Store messages by ID for reply functionality
-
 // DOM Elements
 const greetingPage = document.getElementById('greeting-page');
 const joinRoomPage = document.getElementById('join-room-page');
@@ -34,7 +27,13 @@ const replyUsername = document.getElementById('reply-username');
 const replyMessage = document.getElementById('reply-message');
 const cancelReplyBtn = document.getElementById('cancel-reply');
 
-// Helper functions
+let currentRoom = null;
+let currentUsername = null;
+let isAdmin = false;
+let replyingTo = null;
+let messageMap = new Map();
+let eventSource = null;
+
 function showPage(page) {
     greetingPage.classList.remove('active');
     joinRoomPage.classList.remove('active');
@@ -48,56 +47,39 @@ function formatTimestamp(timestamp) {
 }
 
 function addMessage(messageObj, isOwnMessage = false) {
-    const { id, username, message, timestamp, replyTo } = messageObj;
-    messageMap.set(id, messageObj);
-
+    const { username, message, timestamp, replyTo } = messageObj;
     const messageElement = document.createElement('div');
     messageElement.classList.add('message');
     messageElement.classList.add(isOwnMessage ? 'own-message' : 'other-message');
-    messageElement.dataset.messageId = id;
-
     const usernameElement = document.createElement('div');
     usernameElement.classList.add('username');
     usernameElement.textContent = username;
-
     if (replyTo && messageMap.has(replyTo)) {
         const repliedMessage = messageMap.get(replyTo);
         const quoteElement = document.createElement('div');
         quoteElement.classList.add('reply-quote');
-
         const quoteUsername = document.createElement('div');
         quoteUsername.classList.add('reply-quote-username');
         quoteUsername.textContent = repliedMessage.username;
-
         const quoteText = document.createElement('div');
         quoteText.textContent = repliedMessage.message.length > 50
             ? repliedMessage.message.substring(0, 50) + '...'
             : repliedMessage.message;
-
         quoteElement.appendChild(quoteUsername);
         quoteElement.appendChild(quoteText);
         messageElement.appendChild(quoteElement);
     }
-
     messageElement.appendChild(usernameElement);
-
     const contentElement = document.createElement('div');
     contentElement.classList.add('content');
     contentElement.textContent = message;
     messageElement.appendChild(contentElement);
-
     const timestampElement = document.createElement('div');
     timestampElement.classList.add('timestamp');
     timestampElement.textContent = formatTimestamp(timestamp);
     messageElement.appendChild(timestampElement);
-
     chatMessages.appendChild(messageElement);
-
-    // Enable swipe to reply
-    const hammer = new Hammer(messageElement);
-    hammer.on('swiperight', function () {
-        startReply(id);
-    });
+    messageMap.set(timestamp, messageObj);
 }
 
 function startReply(messageId) {
@@ -124,18 +106,17 @@ function addSystemMessage(message) {
     chatMessages.appendChild(messageElement);
 }
 
-// API calls
-async function apiRequest(path, method = 'GET', data) {
-    const options = { method, headers: { 'Content-Type': 'application/json' } };
-    if (data) options.body = JSON.stringify(data);
-    const res = await fetch(path, options);
-    return res.json();
-}
-
-// Event listeners
 createRoomBtn.addEventListener('click', async () => {
-    const res = await apiRequest('/createRoom', 'POST');
-    if (res.roomKey) enterRoom(res);
+    const response = await fetch('/api/createRoom', { method: 'POST' });
+    const data = await response.json();
+    currentRoom = data.roomKey;
+    currentUsername = data.username;
+    isAdmin = true;
+    roomKeyDisplay.textContent = currentRoom;
+    roomKeyInfo.textContent = currentRoom;
+    usernameDisplay.textContent = currentUsername;
+    adminControls.style.display = isAdmin ? 'block' : 'none';
+    connectToRoom(currentRoom);
 });
 
 joinRoomBtn.addEventListener('click', () => {
@@ -146,14 +127,28 @@ joinRoomBtn.addEventListener('click', () => {
 joinSubmitBtn.addEventListener('click', async () => {
     const roomKey = roomKeyInput.value.trim();
     if (roomKey.length !== 6 || !/^\d+$/.test(roomKey)) {
-        joinErrorMessage.textContent = 'Vui lòng nhập đúng mã phòng 6 chữ số';
+        joinErrorMessage.textContent = 'Please enter a valid 6-digit room key';
         return;
     }
-    const res = await apiRequest('/joinRoom', 'POST', { roomKey });
-    if (res.error) {
-        joinErrorMessage.textContent = res.error;
+    const response = await fetch('/api/joinRoom', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomKey })
+    });
+    if (response.ok) {
+        const data = await response.json();
+        currentRoom = roomKey;
+        currentUsername = data.username;
+        isAdmin = false;
+        roomKeyDisplay.textContent = currentRoom;
+        roomKeyInfo.textContent = currentRoom;
+        usernameDisplay.textContent = currentUsername;
+        adminControls.style.display = 'none';
+        joinErrorMessage.textContent = '';
+        connectToRoom(currentRoom);
     } else {
-        enterRoom(res);
+        const err = await response.json();
+        joinErrorMessage.textContent = err.error || 'Failed to join room';
     }
 });
 
@@ -163,96 +158,64 @@ joinBackBtn.addEventListener('click', () => {
     roomKeyInput.value = '';
 });
 
-closeRoomBtn.addEventListener('click', async () => {
-    if (confirm('Bạn có chắc muốn đóng phòng này không?')) {
-        await apiRequest(`/closeRoom/${currentRoom}`, 'DELETE');
-        alert('Phòng đã được đóng');
-        location.reload();
-    }
+closeRoomBtn.addEventListener('click', () => {
+    alert('Close room feature is not supported in this version');
 });
 
-cancelReplyBtn.addEventListener('click', cancelReply);
+cancelReplyBtn.addEventListener('click', () => {
+    cancelReply();
+});
 
-sendMessageBtn.addEventListener('click', sendMessage);
+sendMessageBtn.addEventListener('click', () => {
+    sendMessage();
+});
 
 messageInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') sendMessage();
+    if (e.key === 'Enter') {
+        sendMessage();
+    }
 });
 
 copyRoomKeyBtn.addEventListener('click', () => {
     navigator.clipboard.writeText(currentRoom)
-        .then(() => alert('Đã sao chép mã phòng!'))
-        .catch(() => alert('Không thể sao chép mã phòng'));
+        .then(() => {
+            alert('Room key copied to clipboard!');
+        })
+        .catch(err => {
+            console.error('Could not copy text: ', err);
+        });
 });
 
-usernameDisplay.addEventListener('click', () => {
-    const newName = prompt('Nhập tên mới:');
-    if (newName && newName.trim().length > 0) {
-        apiRequest('/updateName', 'POST', { roomKey: currentRoom, newName: newName.trim() })
-            .then(() => {
-                currentUsername = newName.trim();
-                usernameDisplay.textContent = currentUsername;
-            });
-    }
-});
-
-function sendMessage() {
+async function sendMessage() {
     const message = messageInput.value.trim();
     if (message && currentRoom) {
-        apiRequest('/sendMessage', 'POST', {
-            roomKey: currentRoom,
-            message,
-            replyTo: replyingTo
+        await fetch('/api/sendMessage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                roomKey: currentRoom,
+                username: currentUsername,
+                message: message,
+                replyTo: replyingTo
+            })
         });
         messageInput.value = '';
-        cancelReply();
+        messageInput.focus();
+        if (replyingTo) cancelReply();
     }
 }
 
-function enterRoom(data) {
-    currentRoom = data.roomKey;
-    currentUsername = data.username;
-    isAdmin = data.isAdmin;
-
-    roomKeyDisplay.textContent = currentRoom;
-    roomKeyInfo.textContent = currentRoom;
-    usernameDisplay.textContent = currentUsername;
-    userCountDisplay.textContent = data.userCount;
-    adminControls.style.display = isAdmin ? 'block' : 'none';
-    messageMap.clear();
-
-    if (data.messages) {
-        data.messages.forEach(msg => addMessage(msg, msg.username === currentUsername));
+function connectToRoom(roomKey) {
+    if (eventSource) {
+        eventSource.close();
     }
-
     showPage(chatRoomPage);
-    messageInput.focus();
-
-    listenForUpdates();
-}
-
-function listenForUpdates() {
-    const eventSource = new EventSource(`/stream/${currentRoom}`);
-    eventSource.onmessage = (e) => {
-        const data = JSON.parse(e.data);
-        if (data.type === 'newMessage') {
-            const isOwnMessage = data.username === currentUsername;
-            addMessage(data, isOwnMessage);
-        }
-        if (data.type === 'userJoined') {
-            addSystemMessage(`${data.username} đã tham gia phòng`);
-            userCountDisplay.textContent = data.userCount;
-        }
-        if (data.type === 'userLeft') {
-            addSystemMessage(`${data.username} đã rời phòng`);
-            userCountDisplay.textContent = data.userCount;
-        }
-        if (data.type === 'roomClosed') {
-            alert('Phòng đã bị đóng');
-            location.reload();
-        }
+    eventSource = new EventSource(`/api/stream/${roomKey}`);
+    eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        const isOwnMessage = data.username === currentUsername;
+        addMessage(data, isOwnMessage);
     };
 }
 
-// Init
 showPage(greetingPage);

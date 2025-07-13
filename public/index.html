@@ -7,75 +7,741 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://hammerjs.github.io/dist/hammer.min.js"></script>
+    <!-- Cloudflare Turnstile -->
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <style>
+        /* CAPTCHA Page Styles */
+        .captcha-page {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .captcha-container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .captcha-container h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+        
+        .captcha-container p {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .captcha-widget {
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            color: #e74c3c;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        .success-message {
+            color: #27ae60;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        /* Hide main content initially */
+        .main-content {
+            display: none;
+        }
+        
+        .main-content.show {
+            display: block;
+        }
+        
+        /* Original styles for the main app */
+        .page {
+            display: none;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .page.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+        
+        p {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            flex-direction: column;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn.primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn.primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+        
+        .btn.secondary {
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #dee2e6;
+        }
+        
+        .btn.secondary:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+        }
+        
+        .btn.danger {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .btn.danger:hover {
+            background: #c0392b;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        /* Chat Room Styles */
+        .chat-container {
+            max-width: 800px;
+            margin: 0 auto;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+        
+        .chat-header {
+            background: #667eea;
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 10px;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .message.own {
+            background: #667eea;
+            color: white;
+            margin-left: 20%;
+        }
+        
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        
+        .username {
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .message.own .username {
+            color: #fff;
+        }
+        
+        .timestamp {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .message.own .timestamp {
+            color: #ddd;
+        }
+        
+        .chat-input {
+            display: flex;
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #dee2e6;
+        }
+        
+        .chat-input input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+        }
+        
+        .chat-input input:focus {
+            border-color: #667eea;
+        }
+        
+        .chat-input button {
+            margin-left: 10px;
+            padding: 12px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .chat-input button:hover {
+            background: #5a6fd8;
+        }
+        
+        .welcome-message {
+            text-align: center;
+            padding: 20px;
+            background: #e8f4f8;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .room-key-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .btn-icon {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            color: #667eea;
+        }
+        
+        .btn-icon:hover {
+            color: #5a6fd8;
+        }
+        
+        .reply-container {
+            display: none;
+            background: #f1f3f4;
+            padding: 10px 20px;
+            border-left: 4px solid #667eea;
+            margin: 0 20px;
+        }
+        
+        .reply-container.show {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .reply-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .reply-username {
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .admin-controls {
+            display: none;
+        }
+        
+        .admin-controls.show {
+            display: block;
+        }
+        
+        @media (max-width: 768px) {
+            .chat-header {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .message {
+                margin-left: 0;
+                margin-right: 0;
+            }
+            
+            .message.own {
+                margin-left: 10%;
+            }
+        }
+    </style>
 </head>
 <body>
-    <!-- Greeting Page -->
-    <div id="greeting-page" class="page active">
-        <div class="container">
-            <h1>Anonymous Chat</h1>
-            <p>Create or join a room to start chatting anonymously</p>
-            <div class="cf-turnstile" data-sitekey="0x4AAAAAABk6NkmTqXog6JN0"></div>
-            <div class="button-group">
-                <button id="create-room-btn" class="btn primary">Create Room</button>
-                <button id="join-room-btn" class="btn secondary">Join Room</button>
+    <!-- CAPTCHA Verification Page -->
+    <div id="captcha-page" class="captcha-page">
+        <div class="captcha-container">
+            <h1><i class="fas fa-shield-alt"></i> Verification</h1>
+            <p>Please complete the security check to access the chat</p>
+            
+            <div class="captcha-widget">
+                <div class="cf-turnstile" 
+                     data-sitekey="YOUR_SITE_KEY_HERE"
+                     data-callback="onCaptchaSuccess"
+                     data-error-callback="onCaptchaError"
+                     data-expired-callback="onCaptchaExpired"
+                     data-theme="light">
+                </div>
             </div>
+            
+            <div class="loading" id="captcha-loading">
+                <div class="spinner"></div>
+                <p>Verifying...</p>
+            </div>
+            
+            <div id="captcha-error" class="error-message"></div>
+            <div id="captcha-success" class="success-message"></div>
         </div>
     </div>
 
-    <!-- Join Room Page -->
-    <div id="join-room-page" class="page">
-        <div class="container">
-            <h1>Join Room</h1>
-            <p>Enter the 6-digit room key to join</p>
-            <div class="input-group">
-                <input type="text" id="room-key-input" placeholder="Room Key" maxlength="6" pattern="[0-9]{6}">
-                <div class="error-message" id="join-error-message"></div>
-            </div>
-            <div class="button-group">
-                <button id="join-submit-btn" class="btn primary">Join</button>
-                <button id="join-back-btn" class="btn secondary">Back</button>
+    <!-- Main Chat Application (Hidden initially) -->
+    <div id="main-content" class="main-content">
+        <!-- Greeting Page -->
+        <div id="greeting-page" class="page active">
+            <div class="container">
+                <h1>Anonymous Chat</h1>
+                <p>Create or join a room to start chatting anonymously</p>
+                <div class="button-group">
+                    <button id="create-room-btn" class="btn primary">Create Room</button>
+                    <button id="join-room-btn" class="btn secondary">Join Room</button>
+                </div>
             </div>
         </div>
-    </div>
-
-    <!-- Chat Room Page -->
-    <div id="chat-room-page" class="page">
-        <div class="chat-container">
-            <div class="chat-header">
-                <div class="room-info">
-                    <h2>Room: <span id="room-key-display"></span></h2>
-                    <p>You are: <span id="username-display"></span></p>
+        
+        <!-- Join Room Page -->
+        <div id="join-room-page" class="page">
+            <div class="container">
+                <h1>Join Room</h1>
+                <p>Enter the 6-digit room key to join</p>
+                <div class="input-group">
+                    <input type="text" id="room-key-input" placeholder="Room Key" maxlength="6" pattern="[0-9]{6}">
+                    <div class="error-message" id="join-error-message"></div>
                 </div>
-                <div class="user-count">
-                    <p>Users in room: <span id="user-count-display">1</span></p>
-                </div>
-                <div class="admin-controls" id="admin-controls">
-                    <button id="close-room-btn" class="btn danger">Close Room</button>
+                <div class="button-group">
+                    <button id="join-submit-btn" class="btn primary">Join</button>
+                    <button id="join-back-btn" class="btn secondary">Back</button>
                 </div>
             </div>
-            <div class="chat-messages" id="chat-messages">
-                <div class="welcome-message">
-                    <p>Welcome to the chat room! You can now start chatting anonymously.</p>
-                    <p class="room-key-info">Room Key: <span id="room-key-info"></span> <button id="copy-room-key" class="btn-icon"><i class="fas fa-copy"></i></button></p>
-                </div>
-            </div>
-            <div class="reply-container" id="reply-container">
-                <div class="reply-content">
-                    <div class="reply-text">
-                        <span class="reply-username" id="reply-username"></span>
-                        <span id="reply-message"></span>
+        </div>
+        
+        <!-- Chat Room Page -->
+        <div id="chat-room-page" class="page">
+            <div class="chat-container">
+                <div class="chat-header">
+                    <div class="room-info">
+                        <h2>Room: <span id="room-key-display"></span></h2>
+                        <p>You are: <span id="username-display"></span></p>
                     </div>
-                    <button id="cancel-reply" class="btn-icon"><i class="fas fa-times"></i></button>
+                    <div class="user-count">
+                        <p>Users in room: <span id="user-count-display">1</span></p>
+                    </div>
+                    <div class="admin-controls" id="admin-controls">
+                        <button id="close-room-btn" class="btn danger">Close Room</button>
+                    </div>
                 </div>
-            </div>
-            <div class="chat-input">
-                <input type="text" id="message-input" placeholder="Type your message...">
-                <button id="send-message-btn"><i class="fas fa-paper-plane"></i></button>
+                <div class="chat-messages" id="chat-messages">
+                    <div class="welcome-message">
+                        <p>Welcome to the chat room! You can now start chatting anonymously.</p>
+                        <p class="room-key-info">Room Key: <span id="room-key-info"></span> <button id="copy-room-key" class="btn-icon"><i class="fas fa-copy"></i></button></p>
+                    </div>
+                </div>
+                <div class="reply-container" id="reply-container">
+                    <div class="reply-content">
+                        <div class="reply-text">
+                            <span class="reply-username" id="reply-username"></span>
+                            <span id="reply-message"></span>
+                        </div>
+                        <button id="cancel-reply" class="btn-icon"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+                <div class="chat-input">
+                    <input type="text" id="message-input" placeholder="Type your message...">
+                    <button id="send-message-btn"><i class="fas fa-paper-plane"></i></button>
+                </div>
             </div>
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script>
+        // CAPTCHA handling
+        let captchaToken = null;
+        let isVerified = false;
+
+        // Callback functions for Turnstile
+        function onCaptchaSuccess(token) {
+            captchaToken = token;
+            document.getElementById('captcha-loading').classList.add('show');
+            document.getElementById('captcha-error').textContent = '';
+            
+            // Verify token with backend
+            verifyCaptcha(token);
+        }
+
+        function onCaptchaError(error) {
+            document.getElementById('captcha-error').textContent = 'CAPTCHA verification failed. Please try again.';
+            document.getElementById('captcha-loading').classList.remove('show');
+        }
+
+        function onCaptchaExpired() {
+            document.getElementById('captcha-error').textContent = 'CAPTCHA expired. Please try again.';
+            captchaToken = null;
+        }
+
+        // Verify CAPTCHA with backend
+        async function verifyCaptcha(token) {
+            try {
+                const response = await fetch('/api/verify-captcha', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ token })
+                });
+
+                const data = await response.json();
+                document.getElementById('captcha-loading').classList.remove('show');
+
+                if (data.success) {
+                    isVerified = true;
+                    document.getElementById('captcha-success').textContent = 'Verification successful! Redirecting...';
+                    
+                    // Store verification status
+                    sessionStorage.setItem('captcha_verified', 'true');
+                    
+                    // Redirect to main app after short delay
+                    setTimeout(() => {
+                        document.getElementById('captcha-page').style.display = 'none';
+                        document.getElementById('main-content').classList.add('show');
+                        initializeMainApp();
+                    }, 1500);
+                } else {
+                    document.getElementById('captcha-error').textContent = data.error || 'Verification failed. Please try again.';
+                    // Reset CAPTCHA
+                    if (typeof turnstile !== 'undefined') {
+                        turnstile.reset();
+                    }
+                }
+            } catch (error) {
+                console.error('Verification error:', error);
+                document.getElementById('captcha-loading').classList.remove('show');
+                document.getElementById('captcha-error').textContent = 'Network error. Please try again.';
+            }
+        }
+
+        // Check if already verified
+        function checkVerificationStatus() {
+            const verified = sessionStorage.getItem('captcha_verified');
+            if (verified === 'true') {
+                // Verify with server that session is still valid
+                fetch('/api/check-verification', {
+                    method: 'GET',
+                    credentials: 'include'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.verified) {
+                        document.getElementById('captcha-page').style.display = 'none';
+                        document.getElementById('main-content').classList.add('show');
+                        initializeMainApp();
+                    } else {
+                        sessionStorage.removeItem('captcha_verified');
+                    }
+                })
+                .catch(error => {
+                    console.error('Verification check error:', error);
+                    sessionStorage.removeItem('captcha_verified');
+                });
+            }
+        }
+
+        // Initialize main application
+        function initializeMainApp() {
+            // Original chat app logic
+            let currentRoom = null;
+            let currentUsername = null;
+            let isRoomOwner = false;
+            let eventSource = null;
+            let replyTo = null;
+
+            // Navigation functions
+            function showPage(pageId) {
+                document.querySelectorAll('.page').forEach(page => {
+                    page.classList.remove('active');
+                });
+                document.getElementById(pageId).classList.add('active');
+            }
+
+            // Create room
+            document.getElementById('create-room-btn').addEventListener('click', async () => {
+                try {
+                    const response = await fetch('/api/createRoom', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include'
+                    });
+                    
+                    const data = await response.json();
+                    if (data.roomKey) {
+                        currentRoom = data.roomKey;
+                        currentUsername = data.username;
+                        isRoomOwner = true;
+                        joinChatRoom();
+                    }
+                } catch (error) {
+                    console.error('Error creating room:', error);
+                }
+            });
+
+            // Join room button
+            document.getElementById('join-room-btn').addEventListener('click', () => {
+                showPage('join-room-page');
+            });
+
+            // Join room submit
+            document.getElementById('join-submit-btn').addEventListener('click', async () => {
+                const roomKey = document.getElementById('room-key-input').value.trim();
+                if (roomKey.length !== 6) {
+                    document.getElementById('join-error-message').textContent = 'Room key must be 6 digits';
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/joinRoom', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ roomKey })
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        currentRoom = roomKey;
+                        currentUsername = data.username;
+                        isRoomOwner = false;
+                        joinChatRoom();
+                    } else {
+                        document.getElementById('join-error-message').textContent = 'Room not found';
+                    }
+                } catch (error) {
+                    console.error('Error joining room:', error);
+                    document.getElementById('join-error-message').textContent = 'Connection error';
+                }
+            });
+
+            // Back button
+            document.getElementById('join-back-btn').addEventListener('click', () => {
+                showPage('greeting-page');
+            });
+
+            // Join chat room
+            function joinChatRoom() {
+                document.getElementById('room-key-display').textContent = currentRoom;
+                document.getElementById('room-key-info').textContent = currentRoom;
+                document.getElementById('username-display').textContent = currentUsername;
+                
+                if (isRoomOwner) {
+                    document.getElementById('admin-controls').classList.add('show');
+                }
+                
+                showPage('chat-room-page');
+                connectToChat();
+            }
+
+            // Connect to chat
+            function connectToChat() {
+                if (eventSource) {
+                    eventSource.close();
+                }
+                
+                eventSource = new EventSource(`/api/stream/${currentRoom}`);
+                
+                eventSource.onmessage = function(event) {
+                    const message = JSON.parse(event.data);
+                    displayMessage(message);
+                };
+                
+                eventSource.onerror = function(error) {
+                    console.error('EventSource error:', error);
+                };
+            }
+
+            // Display message
+            function displayMessage(message) {
+                const messagesContainer = document.getElementById('chat-messages');
+                const messageElement = document.createElement('div');
+                messageElement.className = `message ${message.username === currentUsername ? 'own' : ''}`;
+                
+                const timestamp = new Date(message.timestamp).toLocaleTimeString();
+                
+                messageElement.innerHTML = `
+                    <div class="message-header">
+                        <span class="username">${message.username}</span>
+                        <span class="timestamp">${timestamp}</span>
+                    </div>
+                    <div class="message-text">${message.message}</div>
+                `;
+                
+                messagesContainer.appendChild(messageElement);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+
+            // Send message
+            async function sendMessage() {
+                const messageInput = document.getElementById('message-input');
+                const message = messageInput.value.trim();
+                
+                if (!message) return;
+                
+                try {
+                    await fetch('/api/sendMessage', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            roomKey: currentRoom,
+                            username: currentUsername,
+                            message: message
+                        })
+                    });
+                    
+                    messageInput.value = '';
+                } catch (error) {
+                    console.error('Error sending message:', error);
+                }
+            }
+
+            // Message input events
+            document.getElementById('send-message-btn').addEventListener('click', sendMessage);
+            document.getElementById('message-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+
+            // Copy room key
+            document.getElementById('copy-room-key').addEventListener('click', () => {
+                navigator.clipboard.writeText(currentRoom);
+            });
+
+            // Close room
+            document.getElementById('close-room-btn').addEventListener('click', () => {
+                if (confirm('Are you sure you want to close this room?')) {
+                    // Implementation for closing room
+                    showPage('greeting-page');
+                }
+            });
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            checkVerificationStatus();
+        });
+    </script>
 </body>
 </html>

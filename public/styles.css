@@ -33,11 +33,173 @@ body {
 .page {
   width: 100%;
   height: 100vh;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.page.active {
+  display: flex;
+}
+
+/* Auth Pages Styling */
+.auth-container {
+  background: var(--chat-bg);
+  padding: 40px;
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.auth-logo {
+  width: 80px;
+  height: 80px;
+  background: var(--primary);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  margin: 0 auto 24px;
 }
 
+.auth-logo i {
+  font-size: 36px;
+  color: white;
+}
+
+.auth-container h1 {
+  font-size: 28px;
+  margin-bottom: 12px;
+  color: var(--text);
+}
+
+.auth-container p {
+  color: var(--text-secondary);
+  margin-bottom: 32px;
+}
+
+.auth-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-buttons button {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--header-bg);
+  color: var(--text);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition: var(--transition);
+}
+
+.auth-buttons button:hover {
+  background: var(--primary);
+  transform: translateY(-2px);
+}
+
+.auth-buttons button i {
+  font-size: 18px;
+}
+
+/* Join Room Page */
+.page-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 32px;
+  position: relative;
+}
+
+.back-btn {
+  position: absolute;
+  left: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: var(--transition);
+}
+
+.back-btn:hover {
+  color: var(--text);
+  background: var(--header-bg);
+}
+
+.page-header h2 {
+  flex: 1;
+  text-align: center;
+  color: var(--text);
+  font-size: 24px;
+}
+
+.input-wrapper {
+  margin-bottom: 24px;
+}
+
+.input-field {
+  background: var(--header-bg);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.input-field i {
+  color: var(--text-secondary);
+}
+
+.input-field input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 16px;
+}
+
+.input-field input:focus {
+  outline: none;
+}
+
+.error-message {
+  color: #ef4444;
+  font-size: 14px;
+  text-align: left;
+  display: block;
+  min-height: 20px;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--primary);
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.submit-btn:hover {
+  background: #3b82f6;
+  transform: translateY(-2px);
+}
+
+/* Chat Room Styling */
 .chat-container {
   width: 100%;
   max-width: 1000px;
@@ -48,7 +210,6 @@ body {
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow);
-  margin: 20px;
 }
 
 .chat-header {
@@ -278,6 +439,10 @@ body {
 }
 
 @media (max-width: 640px) {
+  .auth-container {
+    padding: 32px 24px;
+  }
+  
   .chat-container {
     height: 100vh;
     margin: 0;
